@@ -1,0 +1,23 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: app-db
+      POSTGRES_PASSWORD: acKQfbU9PmKKsWu9
+      POSTGRES_USER: app-user
+  vault:
+    image: vault
+    ports:
+      - "8200:8200"
+    # volumes:
+    #   - ./file:/vault/file:rw
+    #   - ./config:/vault/config:rw
+  app:
+    build: app/.
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
