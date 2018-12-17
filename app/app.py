@@ -29,26 +29,29 @@ class Config:
 
     def _vault_client(self):
         def auth_setup(auth_token):
-            url = 'http://localhost:8200'
             client = hvac.Client(url=url, token=auth_token)
             auth_result = client.write('auth/approle/role/app/secret-id')
             assert client.is_authenticated()
             return auth_result['data']['secret_id']
 
         def auth_role(role_id, role_token):
-            url = 'http://localhost:8200'
             client2 = hvac.Client(url=url)
-            client2.token = client2.auth_approle(role_id, role_token)['auth']['client_token']
+            result = client2.auth_approle(role_id, role_token)
+            client2.token = result['auth']['client_token']
             assert client2.is_authenticated()
             return client2
 
-        auth_token = self.config['vault']['auth_token']
+        url = "http://{}:{}".format(
+            self.config['vault']['host'],
+            self.config['vault']['port']
+        )
+        role_token = self.config['vault']['role_token']
         role_id = self.config['vault']['role_id']
-        secret_id = auth_setup(auth_token)
+        secret_id = auth_setup(role_token)
         return auth_role(role_id, secret_id)
 
     def set_vault_db(self):
-        password = self.vault_client.read('secret/data/app')['data']['data']['database_pass']
+        password = self.vault_client.read('secret/data/app')['data']['data']['database_password']
         self.config['db']['password'] = password
 
 class BuildingsApi(Flask):
@@ -89,18 +92,18 @@ class BuildingsApi(Flask):
 
     def index(self):
         context = {'message': 'Hello world!'}
-        return Response(json.dumps(context), mimetype='text/json')
+        return Response(json.dumps(context), mimetype='application/json')
 
     def buildings(self):
         with self._get_db_cursor() as cursor:
             buildings = db_buildings_all(cursor)
-            return Response(str(buildings), mimetype='text/json')
+            return Response(str(buildings), mimetype='application/json')
         return Response("Database error", status_code=500)
 
     def building_get(self, building_id):
         with self._get_db_cursor() as cursor:
             building = db_buildings_get(cursor, building_id)
-            return Response(str(building), mimetype='text/json')
+            return Response(str(building), mimetype='application/json')
         return Response("Database error", status_code=500)
 
 def db_buildings_all(cursor):

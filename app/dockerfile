@@ -1,7 +1,9 @@
 
 FROM python:3-slim
-ADD . /app
-WORKDIR /app
-RUN pip install .
+RUN mkdir -p /app/config
+COPY ./setup.py /app/setup.py
+COPY ./app.py /app/app.py
+RUN pip install /app
 EXPOSE 8000
-CMD ["app", "settings.yml"]
+STOPSIGNAL SIGKILL
+CMD ["app", "/app/config/settings.yml"]
